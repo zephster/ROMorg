@@ -33,7 +33,9 @@ int count_roms(struct dirent *ds, DIR *rom_dir)
 
 	while (ds = readdir(rom_dir))
 	{
-		if (!is_rom(ds->d_name)) continue;
+		if (!is_rom(ds->d_name)) 
+			continue;
+			
 		rom_count++;
 	}
 
