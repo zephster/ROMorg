@@ -57,7 +57,7 @@ void main ()
 		return;
 	}
 	
-	if (mkdir(TMP_DIR, 0777) == 0)
+	if (!(mkdir(TMP_DIR, 0777) == 0))
 	{
 		puts("Unable to create tmp directory.");
 		return;
