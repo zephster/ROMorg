@@ -33,8 +33,10 @@ int count_roms(struct dirent *ds, DIR *rom_dir)
 
 	while (ds = readdir(rom_dir))
 	{
-		if (is_rom(ds->d_name))
-			rom_count++;
+		if (!is_rom(ds->d_name)) 
+			continue;
+			
+		rom_count++;
 	}
 
 	return rom_count;
@@ -51,107 +53,101 @@ void main ()
 	DIR *dirp  = opendir(ROM_DIR);
 	int rom_count = count_roms(ds, dirp);
 
-	if (rom_count)
+	if (!rom_count)
 	{
-		char roms_list_buffer[(rom_count) * MAX_TITLE_LENGTH];
-		rewinddir(dirp);
-		int i = 0;
+		puts("No ROMs found.");
+		return;
+	}
+	
+	if (!(mkdir(TMP_DIR, 0777) == 0))
+	{
+		puts("Unable to create tmp directory.");
+		return;
+	}
+	
+	char roms_list_buffer[(rom_count) * MAX_TITLE_LENGTH];
+	rewinddir(dirp);
+	int i = 0;
 
-		while (ds = readdir(dirp))
+	while (ds = readdir(dirp))
+	{
+		if (!is_rom(ds->d_name)) continue;
+		strcpy(&roms_list_buffer[i], ds->d_name);
+
+		// fixme
+		// strncpy(&roms_list_buffer[i], ds->d_name, sizeof(ds->d_name));
+
+		i += MAX_TITLE_LENGTH;
+	}
+
+	closedir(dirp);
+
+
+	printf("Found %d ROMs:\n", rom_count);
+	for (i = 0; i < rom_count; i++)
+	{
+		printf("%d. %s\n", i+1, &roms_list_buffer[i * MAX_TITLE_LENGTH]);
+	}
+
+	printf("\nWhich ROM do you want to appear first?\nEnter ID: ");
+
+	int rom_order_buffer[rom_count];
+	int tmp_input;
+
+	// todo: instead of for(), use a do/while until sizeof(rom_order_buffer) = rom_count
+	for (i = 0; i < rom_count; i++)
+	{
+		if (i >= 1)
+			printf("Next ID: ");
+
+		// check if valid int, and if valid rom id
+		// todo: check if input already exists in rom_order_buffer
+		if (scanf("%d", &tmp_input) && tmp_input <= rom_count && tmp_input > 0)
 		{
-			if (is_rom(ds->d_name))
-			{
-				strcpy(&roms_list_buffer[i], ds->d_name);
-
-				// fixme
-				// strncpy(&roms_list_buffer[i], ds->d_name, sizeof(ds->d_name));
-
-				i += MAX_TITLE_LENGTH;
-			}
-		}
-
-		closedir(dirp);
-
-
-		printf("Found %d ROMs:\n", rom_count);
-		for (i = 0; i < rom_count; i++)
-			printf("%d. %s\n", i+1, &roms_list_buffer[i * MAX_TITLE_LENGTH]);
-
-
-
-		printf("\nWhich ROM do you want to appear first?\nEnter ID: ");
-
-		int rom_order_buffer[rom_count];
-		int tmp_input;
-
-		// todo: instead of for(), use a do/while until sizeof(rom_order_buffer) = rom_count
-		for (i = 0; i < rom_count; i++)
-		{
-			if (i >= 1)
-				printf("Next ID: ");
-
-			// check if valid int, and if valid rom id
-			// todo: check if input already exists in rom_order_buffer
-			if (scanf("%d", &tmp_input) && tmp_input <= rom_count && tmp_input > 0)
-			{
-				rom_order_buffer[i] = tmp_input;
-			}
-			else
-			{
-				// fixme: this will skip any remaining iterations and print invalid rom id for each, only if input != int
-				// if input is an invalid rom id but still an int, it continues as expected
-				puts("invalid rom id");
-			}
-		}
-
-
-		if (mkdir(TMP_DIR, 0777) == 0)
-		{
-			printf("\nSorting...");
-
-			// move 'em in
-			char rom_in_tmp[(rom_count) * (MAX_TITLE_LENGTH + sizeof(TMP_DIR))];
-			int rom_in_tmp_index;
-			for (i = 0; i < rom_count; i++)
-			{
-				rom_in_tmp_index = (i * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
-				strcpy(&rom_in_tmp[rom_in_tmp_index], TMP_DIR "/");
-				strcat(&rom_in_tmp[rom_in_tmp_index], &roms_list_buffer[i * MAX_TITLE_LENGTH]);
-
-				// printf("\nmoving %s into %s...", &roms_list_buffer[i * MAX_TITLE_LENGTH], &rom_in_tmp[rom_in_tmp_index]);
-				rename(&roms_list_buffer[i * MAX_TITLE_LENGTH], &rom_in_tmp[rom_in_tmp_index]);
-				printf(".");
-			}
-
-			// take 'em out, in order
-			char rom_in_root;
-			int user_ordered_index;
-			for (i = 0; i < rom_count; i++)
-			{
-				user_ordered_index = (rom_order_buffer[i] - 1);
-				rom_in_tmp_index   = (user_ordered_index * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
-				strcpy(&rom_in_root, ROM_DIR);
-				strcat(&rom_in_root, &roms_list_buffer[user_ordered_index * MAX_TITLE_LENGTH]);
-
-				// printf("\nmoving %s into %s...", &rom_in_tmp[rom_in_tmp_index], &rom_in_root);
-				rename(&rom_in_tmp[rom_in_tmp_index], &rom_in_root);
-				printf(".");
-			}
-
-			// bye bye
-			remove(TMP_DIR);
+			rom_order_buffer[i] = tmp_input;
 		}
 		else
 		{
-			puts("Unable to create tmp directory.");
+			// fixme: this will skip any remaining iterations and print invalid rom id for each, only if input != int
+			// if input is an invalid rom id but still an int, it continues as expected
+			puts("invalid rom id");
 		}
-
 	}
-	else
+
+	printf("\nSorting...");
+
+	// move 'em in
+	char rom_in_tmp[(rom_count) * (MAX_TITLE_LENGTH + sizeof(TMP_DIR))];
+	int rom_in_tmp_index;
+	for (i = 0; i < rom_count; i++)
 	{
-		puts("No ROMs found.");
+		rom_in_tmp_index = (i * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
+		strcpy(&rom_in_tmp[rom_in_tmp_index], TMP_DIR "/");
+		strcat(&rom_in_tmp[rom_in_tmp_index], &roms_list_buffer[i * MAX_TITLE_LENGTH]);
+
+		// printf("\nmoving %s into %s...", &roms_list_buffer[i * MAX_TITLE_LENGTH], &rom_in_tmp[rom_in_tmp_index]);
+		rename(&roms_list_buffer[i * MAX_TITLE_LENGTH], &rom_in_tmp[rom_in_tmp_index]);
+		printf(".");
 	}
 
+	// take 'em out, in order
+	char rom_in_root;
+	int user_ordered_index;
+	for (i = 0; i < rom_count; i++)
+	{
+		user_ordered_index = (rom_order_buffer[i] - 1);
+		rom_in_tmp_index   = (user_ordered_index * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
+		strcpy(&rom_in_root, ROM_DIR);
+		strcat(&rom_in_root, &roms_list_buffer[user_ordered_index * MAX_TITLE_LENGTH]);
+
+		// printf("\nmoving %s into %s...", &rom_in_tmp[rom_in_tmp_index], &rom_in_root);
+		rename(&rom_in_tmp[rom_in_tmp_index], &rom_in_root);
+		printf(".");
+	}
+
+	// bye bye
+	remove(TMP_DIR);
+	
 	printf("\nDone!");
 	return;
 }
