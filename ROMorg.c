@@ -9,7 +9,7 @@
 #include <dirent.h>
 
 #define MAX_TITLE_LENGTH 128
-#define TMP_DIR "3dssort_tmp"
+#define TMP_DIR "romorg_tmp"
 #define ROM_DIR "./"
 
 int is_rom(char *filename)
