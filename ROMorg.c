@@ -39,7 +39,27 @@ int count_roms(struct dirent *ds, DIR *rom_dir)
 		rom_count++;
 	}
 
+	rewinddir(rom_dir);
+
 	return rom_count;
+}
+
+void scan_roms(char *roms_list_buffer, struct dirent *ds, DIR *rom_dir)
+{
+	int i = 0;
+
+	while (ds = readdir(rom_dir))
+	{
+		if (!is_rom(ds->d_name))
+			continue;
+
+		strcpy(&roms_list_buffer[i], ds->d_name);
+
+		// fixme
+		// strncpy(&roms_list_buffer[i], ds->d_name, sizeof(ds->d_name));
+
+		i += MAX_TITLE_LENGTH;
+	}
 }
 
 void main ()
@@ -50,8 +70,9 @@ void main ()
 	puts("-----------------------------\n");
 
 	struct dirent *ds;
-	DIR *dirp  = opendir(ROM_DIR);
+	DIR *dirp     = opendir(ROM_DIR);
 	int rom_count = count_roms(ds, dirp);
+	char roms_list_buffer[(rom_count) * MAX_TITLE_LENGTH];
 
 	if (!rom_count)
 	{
@@ -65,29 +86,15 @@ void main ()
 		return;
 	}
 	
-	char roms_list_buffer[(rom_count) * MAX_TITLE_LENGTH];
-	rewinddir(dirp);
-	int i = 0;
-
-	while (ds = readdir(dirp))
-	{
-		if (!is_rom(ds->d_name)) continue;
-		strcpy(&roms_list_buffer[i], ds->d_name);
-
-		// fixme
-		// strncpy(&roms_list_buffer[i], ds->d_name, sizeof(ds->d_name));
-
-		i += MAX_TITLE_LENGTH;
-	}
-
+	scan_roms(roms_list_buffer, ds, dirp);
 	closedir(dirp);
 
-
 	printf("Found %d ROMs:\n", rom_count);
-	for (i = 0; i < rom_count; i++)
+	for (int i = 0; i < rom_count; i++)
 	{
 		printf("%d. %s\n", i+1, &roms_list_buffer[i * MAX_TITLE_LENGTH]);
 	}
+
 
 	printf("\nWhich ROM do you want to appear first?\nEnter ID: ");
 
@@ -95,7 +102,7 @@ void main ()
 	int tmp_input;
 
 	// todo: instead of for(), use a do/while until sizeof(rom_order_buffer) = rom_count
-	for (i = 0; i < rom_count; i++)
+	for (int i = 0; i < rom_count; i++)
 	{
 		if (i >= 1)
 			printf("Next ID: ");
@@ -119,7 +126,7 @@ void main ()
 	// move 'em in
 	char rom_in_tmp[(rom_count) * (MAX_TITLE_LENGTH + sizeof(TMP_DIR))];
 	int rom_in_tmp_index;
-	for (i = 0; i < rom_count; i++)
+	for (int i = 0; i < rom_count; i++)
 	{
 		rom_in_tmp_index = (i * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
 		strcpy(&rom_in_tmp[rom_in_tmp_index], TMP_DIR "/");
@@ -133,7 +140,7 @@ void main ()
 	// take 'em out, in order
 	char rom_in_root;
 	int user_ordered_index;
-	for (i = 0; i < rom_count; i++)
+	for (int i = 0; i < rom_count; i++)
 	{
 		user_ordered_index = (rom_order_buffer[i] - 1);
 		rom_in_tmp_index   = (user_ordered_index * (MAX_TITLE_LENGTH + sizeof(TMP_DIR)));
