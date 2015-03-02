@@ -62,6 +62,31 @@ void scan_roms(char *roms_list_buffer, struct dirent *ds, DIR *rom_dir)
 	}
 }
 
+void get_rom_order(int rom_count, int *rom_order_buffer)
+{
+	int tmp_input; // move into get_user_order
+
+	// todo: instead of for(), use a do/while until sizeof(rom_order_buffer) = rom_count
+	for (int i = 0; i < rom_count; i++)
+	{
+		if (i >= 1)
+			printf("Next ID: ");
+
+		// check if valid int, and if valid rom id
+		// todo: check if input already exists in rom_order_buffer
+		if (scanf("%d", &tmp_input) && tmp_input <= rom_count && tmp_input > 0)
+		{
+			rom_order_buffer[i] = tmp_input;
+		}
+		else
+		{
+			// fixme: this will skip any remaining iterations and print invalid rom id for each, only if input != int
+			// if input is an invalid rom id but still an int, it continues as expected
+			puts("invalid rom id");
+		}
+	}
+}
+
 void main ()
 {
 	puts("-----------------------------");
@@ -72,6 +97,7 @@ void main ()
 	struct dirent *ds;
 	DIR *dirp     = opendir(ROM_DIR);
 	int rom_count = count_roms(ds, dirp);
+	int rom_order_buffer[rom_count];
 	char roms_list_buffer[(rom_count) * MAX_TITLE_LENGTH];
 
 	if (!rom_count)
@@ -95,31 +121,8 @@ void main ()
 		printf("%d. %s\n", i+1, &roms_list_buffer[i * MAX_TITLE_LENGTH]);
 	}
 
-
 	printf("\nWhich ROM do you want to appear first?\nEnter ID: ");
-
-	int rom_order_buffer[rom_count];
-	int tmp_input;
-
-	// todo: instead of for(), use a do/while until sizeof(rom_order_buffer) = rom_count
-	for (int i = 0; i < rom_count; i++)
-	{
-		if (i >= 1)
-			printf("Next ID: ");
-
-		// check if valid int, and if valid rom id
-		// todo: check if input already exists in rom_order_buffer
-		if (scanf("%d", &tmp_input) && tmp_input <= rom_count && tmp_input > 0)
-		{
-			rom_order_buffer[i] = tmp_input;
-		}
-		else
-		{
-			// fixme: this will skip any remaining iterations and print invalid rom id for each, only if input != int
-			// if input is an invalid rom id but still an int, it continues as expected
-			puts("invalid rom id");
-		}
-	}
+	get_rom_order(rom_count, rom_order_buffer);
 
 	printf("\nSorting...");
 
